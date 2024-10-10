@@ -1,0 +1,6 @@
+[theme]
+primaryColor = "#6c757d"                # Set primary color (optional)
+backgroundColor = "#ffffff"             # Set background to white
+secondaryBackgroundColor = "#f8f9fa"    # Set secondary background
+textColor = "#212529"                   # Set text color
+font = "sans serif"                     # Set the font style (optional)

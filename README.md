@@ -14,7 +14,7 @@ The **Question Bank Generator** is a tool that automatically generates a questio
 1. **Clone the repository:**
 
     ```bash
-    git clone https://github.com/Rakshithg6/Question_Bank_Generator.git
+    git clone https://github.com/excentrix/Question_Bank_Generator.git
     cd Question_Bank_Generator
     ```
 
@@ -40,6 +40,3 @@ The **Question Bank Generator** is a tool that automatically generates a questio
 
 Open your browser and go to `http://localhost:8501` to use the application.
 
-## License
-
-This project is licensed under the MIT License.

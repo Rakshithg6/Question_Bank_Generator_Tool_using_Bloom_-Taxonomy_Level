@@ -17,6 +17,7 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle
 from reportlab.lib.units import inch
+ 
 
 # Set up Gemini API key
 google_api_key = "AIzaSyDUgOcQy1AokHighaXjxFlEYqpu6cSmP9I"
@@ -79,12 +80,22 @@ def extract_text(uploaded_file):
             st.error("Unsupported file type!")
             return None
     return None
- 
+
+taxonomy_level_list= ['Knowledge', 'Comprehension', 'Application', 'Analysis', 'Synthesis', 'Evaluation']
 # Dropdown to select Bloom's Taxonomy level
-taxonomy_level = st.multiselect("Select Bloom's Taxonomy Level",
-                                 ['Knowledge', 'Comprehension', 'Application',
-                                  'Analysis', 'Synthesis', 'Evaluation'])
- 
+taxonomy_level = st.selectbox("Select Bloom's Taxonomy Level",taxonomy_level_list)
+
+print(taxonomy_level)
+
+final_taxonomy_level = []
+
+for level in taxonomy_level_list:
+    final_taxonomy_level.append(level)
+    if level == taxonomy_level:
+        break
+
+print(final_taxonomy_level)
+
  
 # Course outcome and module input fields
 course_outcome = st.text_input("Enter Course Outcome")
@@ -166,43 +177,33 @@ def process_file_for_questions(extracted_text):
  
     chain = get_question_generation_chain()
     response = chain.run(context=extracted_text)
+
     return response
  
 # Filtering function
 def get_filtering_chain():
     filter_prompt_template = """
-        Task: 
+       Task:
 
-        You will receive a list of questions categorized under Bloom's Taxonomy and selected taxonomy levels.
-        Your job is to filter and return exactly 20 questions according to the selected taxonomy levels.
+        You will receive a list of questions categorized under Bloom's Taxonomy, along with selected taxonomy levels. 
+        Your objective is to filter and return exactly 20 questions based on the specified levels.
 
         Instructions:
-            Input:
 
-            A list of questions with their respective Bloom's Taxonomy levels.{response}
-            The selected taxonomy levels.{taxonomy_level}
-            Filtering:
+        Input: A list of questions are in {response} with their corresponding Bloom's Taxonomy levels and 
+        the selected levels indicated by {final_taxonomy_level}.
 
-            If one level is selected, return 20 questions from that level.
-            If two levels are selected, return 10 questions from each.
-            If three levels are selected, return 7 questions from the first two levels and 6 questions from the third level.
-            If all levels are selected, return 20 questions starting from Knowledge, then Comprehension, and so on.
-            Output Format:
+        Filtering:
 
-            Each question should be in JSON format with the question and its corresponding level.
-            Example:
-            [
-                {{
-                    "question": "What is the capital of France?",
-                    "level": "Knowledge"
-                }},
-                {{
-                    "question": "Explain the process of photosynthesis.",
-                    "level": "Comprehension"
-                }}
-            ]
-            Strictly follow the output format do not add ```json in begining and ``` at the end
-        Important: The order of questions must always start from Knowledge, followed by Comprehension,Application,Analysis,Synthesis and Evaluation and so on.    
+        Select a total of 20 questions that include all levels specified in {final_taxonomy_level}.
+        Do not exceed 20 questions, and ensure there are no duplicates.
+        Output Format: Each question should be structured in JSON format, including the question and its corresponding level. For example:
+
+        [ {{ "question": "What is the capital of France?", "level": "Knowledge" }}, {{ "question": "Explain the process of photosynthesis.", "level": "Comprehension" }} ]
+
+        Strictly follow the output format do not add ```json in begining and ``` at the end
+
+        Important: The questions must be ordered starting from Knowledge, followed by Comprehension, Application, Analysis, Synthesis, and Evaluation. Only include levels mentioned in {final_taxonomy_level}; all others should be excluded.   
     """
    
     model = ChatGoogleGenerativeAI(
@@ -212,7 +213,7 @@ def get_filtering_chain():
         google_api_key=google_api_key,
         convert_system_message_to_human=True
     )
-    prompt = PromptTemplate(template=filter_prompt_template, input_variables=["response", "taxonomy_level"])
+    prompt = PromptTemplate(template=filter_prompt_template, input_variables=["response", "final_taxonomy_level"])
     filter_chain = LLMChain(llm=model, prompt=prompt)
     return filter_chain
 
@@ -258,7 +259,7 @@ def save_dataframe_to_pdf(df, module_name, filename):
 # Process file and generate questions when "Generate Questions" button is clicked
 if st.button("Generate Questions"):
     with st.spinner("Generating questions..."):
-        if extracted_text and taxonomy_level:
+        if extracted_text and final_taxonomy_level:
             # Initialize progress bar
             progress = st.progress(0)
 
@@ -269,7 +270,7 @@ if st.button("Generate Questions"):
 
                 # Filter questions based on selected taxonomy level
                 filter_chain = get_filtering_chain()
-                filtered_questions = filter_chain.run(response=questions, taxonomy_level=taxonomy_level)
+                filtered_questions = filter_chain.run(response=questions, final_taxonomy_level=final_taxonomy_level)
 
                 # Update progress
                 progress.progress(100)
